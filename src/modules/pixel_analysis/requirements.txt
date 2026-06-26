@@ -1,0 +1,4 @@
+# Module 03 dependencies (included in root requirements.txt)
+opencv-python>=4.8.0
+numpy>=1.24.0
+Pillow>=10.0.0

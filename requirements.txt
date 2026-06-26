@@ -11,3 +11,5 @@ pytest>=7.4.0
 ultralytics>=8.0.0
 mediapipe>=0.10.0
 torch>=2.0.0
+
+# Module 03 — Pixel Analysis Engine (uses opencv-python, numpy, Pillow above)
