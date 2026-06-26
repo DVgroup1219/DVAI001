@@ -1,4 +1,4 @@
-# Module 02 dependencies (install alongside root requirements.txt)
+# Module 02 dependencies (mirrors root requirements.txt Module 02 section)
 ultralytics>=8.0.0
 mediapipe>=0.10.0
 torch>=2.0.0

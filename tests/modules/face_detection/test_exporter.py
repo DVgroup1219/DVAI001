@@ -16,8 +16,9 @@ def test_export_detection_json(tmp_path: Path) -> None:
 
 
 def test_export_batch_summary(tmp_path: Path) -> None:
-    reports = [DetectionReport(image="A.JPG"), DetectionReport(image="B.JPG")]
-    path = tmp_path / "summary.json"
-    export_batch_summary(reports, path)
-    data = json.loads(path.read_text(encoding="utf-8"))
-    assert data["image_count"] == 2
+  reports = [DetectionReport(image="A.JPG"), DetectionReport(image="B.JPG", errors=["x"])]
+  path = tmp_path / "summary.json"
+  export_batch_summary(reports, path)
+  data = json.loads(path.read_text(encoding="utf-8"))
+  assert data["image_count"] == 2
+  assert data["error_count"] == 1

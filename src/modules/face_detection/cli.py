@@ -66,11 +66,15 @@ def main(argv: list[str] | None = None) -> int:
     try:
         if args.image:
             report = pipeline.run_single(args.image, preview=args.preview)
+            if report.errors:
+                for err in report.errors:
+                    logger.error("Detection error [%s]: %s", report.image, err)
             logger.info(
-                "Done: %s — people=%d faces=%d",
+                "Done: %s — people=%d faces=%d errors=%d",
                 report.image,
                 report.people,
                 report.face_count,
+                len(report.errors),
             )
         elif args.folder:
             reports = pipeline.run_folder(args.folder, preview=args.preview)

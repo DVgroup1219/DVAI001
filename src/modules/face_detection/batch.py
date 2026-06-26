@@ -61,8 +61,19 @@ class BatchProcessor:
                 report = engine.detect_file(path)
                 reports.append(report)
 
+                if report.errors:
+                    logger.warning(
+                        "Detection errors for %s: %s",
+                        path.name,
+                        "; ".join(report.errors),
+                    )
+
                 json_path = json_dir / f"{path.stem}_detection.json"
-                export_detection_json(report, json_path)
+                try:
+                    export_detection_json(report, json_path)
+                except OSError as exc:
+                    logger.error("Failed to export JSON for %s: %s", path.name, exc, exc_info=True)
+                    report.errors.append(f"export_failed: {exc}")
 
                 if self._config.preview_enabled and not report.errors:
                     try:
@@ -77,6 +88,8 @@ class BatchProcessor:
 
     def process_single(self, image_path: Path) -> DetectionReport:
         """Process one JPEG and export JSON."""
+        if not image_path.exists():
+            raise FileNotFoundError(f"Image not found: {image_path}")
         return self.process_paths([image_path])[0]
 
     def process_folder(self, folder: Path) -> list[DetectionReport]:

@@ -7,6 +7,7 @@ import logging
 import numpy as np
 
 from src.modules.face_detection.detectors.base import BaseDetector, RawPersonDetection
+from src.modules.face_detection.exceptions import DetectorUnavailableError
 from src.modules.face_detection.models import BoundingBox
 
 logger = logging.getLogger(__name__)
@@ -14,6 +15,8 @@ logger = logging.getLogger(__name__)
 
 class YOLOPersonDetector(BaseDetector[RawPersonDetection]):
     """Detects people using Ultralytics YOLOv8."""
+
+    backend_name = "yolov8"
 
     def __init__(
         self,
@@ -31,21 +34,27 @@ class YOLOPersonDetector(BaseDetector[RawPersonDetection]):
         """Load YOLO model with error handling."""
         try:
             from ultralytics import YOLO
+        except ImportError as exc:
+            logger.error("ultralytics not installed — YOLO person detection unavailable")
+            raise DetectorUnavailableError(
+                "ultralytics is required for YOLO person detection. "
+                "Install with: pip install ultralytics"
+            ) from exc
 
+        try:
             model = YOLO(model_name)
             logger.info("Loaded YOLO model: %s on %s", model_name, self._device)
             return model
-        except ImportError as exc:
-            raise RuntimeError(
-                "ultralytics is required for person detection. "
-                "Install with: pip install ultralytics"
-            ) from exc
         except Exception as exc:
-            logger.exception("Failed to load YOLO model")
-            raise RuntimeError(f"Cannot load YOLO model: {model_name}") from exc
+            logger.exception("Failed to load YOLO model: %s", model_name)
+            raise DetectorUnavailableError(f"Cannot load YOLO model: {model_name}") from exc
 
     def detect(self, image_rgb: np.ndarray) -> list[RawPersonDetection]:
         """Detect all people in the image."""
+        if image_rgb.size == 0:
+            logger.warning("YOLO received empty image array")
+            return []
+
         height, width = image_rgb.shape[:2]
         results: list[RawPersonDetection] = []
 
@@ -58,10 +67,11 @@ class YOLOPersonDetector(BaseDetector[RawPersonDetection]):
                 verbose=False,
             )
         except Exception as exc:
-            logger.exception("YOLO person detection failed")
-            raise RuntimeError("Person detection failed") from exc
+            logger.exception("YOLO person detection inference failed")
+            raise RuntimeError("YOLO person detection failed") from exc
 
         if not predictions:
+            logger.debug("YOLO returned no predictions")
             return results
 
         boxes = predictions[0].boxes
@@ -69,8 +79,13 @@ class YOLOPersonDetector(BaseDetector[RawPersonDetection]):
             return results
 
         for box in boxes:
-            xyxy = box.xyxy[0].cpu().numpy()
-            conf = float(box.conf[0].cpu().numpy())
+            try:
+                xyxy = box.xyxy[0].cpu().numpy()
+                conf = float(box.conf[0].cpu().numpy())
+            except (AttributeError, IndexError, TypeError) as exc:
+                logger.warning("Skipping malformed YOLO box: %s", exc)
+                continue
+
             x1, y1, x2, y2 = [int(v) for v in xyxy]
             x1 = max(0, x1)
             y1 = max(0, y1)
@@ -87,5 +102,9 @@ class YOLOPersonDetector(BaseDetector[RawPersonDetection]):
                 )
             )
 
-        logger.debug("Detected %d people", len(results))
+        logger.debug("YOLO detected %d people", len(results))
         return results
+
+    def close(self) -> None:
+        """Release model reference."""
+        self._model = None

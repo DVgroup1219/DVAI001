@@ -55,7 +55,10 @@ class PreviewGenerator:
             )
 
         output_path.parent.mkdir(parents=True, exist_ok=True)
-        cv2.imwrite(str(output_path), bgr)
+        success = cv2.imwrite(str(output_path), bgr)
+        if not success:
+            logger.error("Failed to write debug preview: %s", output_path)
+            return None
         logger.info("Saved debug preview: %s", output_path)
         return output_path
 

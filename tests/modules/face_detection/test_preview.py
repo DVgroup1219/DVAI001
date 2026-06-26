@@ -14,6 +14,15 @@ from src.modules.face_detection.models import (
 from src.modules.face_detection.preview import PreviewGenerator
 
 
+def test_preview_returns_none_on_write_failure(tmp_path: Path) -> None:
+    rgb = np.zeros((100, 100, 3), dtype=np.uint8)
+    report = DetectionReport(image="test.jpg", people=0, face_count=0)
+    output = tmp_path / "preview.jpg"
+    with patch("src.modules.face_detection.preview.cv2.imwrite", return_value=False):
+        result = PreviewGenerator().generate(rgb, report, output)
+    assert result is None
+
+
 def test_preview_saves_copy(tmp_path: Path) -> None:
     rgb = np.zeros((100, 100, 3), dtype=np.uint8)
     report = DetectionReport(
