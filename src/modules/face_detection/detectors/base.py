@@ -1,0 +1,38 @@
+"""Base detector interfaces."""
+
+from __future__ import annotations
+
+from abc import ABC, abstractmethod
+from dataclasses import dataclass
+from typing import Generic, TypeVar
+
+import numpy as np
+
+from src.modules.face_detection.models import BoundingBox, PersonDetection
+
+T = TypeVar("T")
+
+
+class BaseDetector(ABC, Generic[T]):
+    """Abstract detector contract for reusable future modules."""
+
+    @abstractmethod
+    def detect(self, image_rgb: np.ndarray) -> list[T]:
+        """Detect objects in an RGB image without modifying it."""
+
+
+@dataclass
+class RawFaceDetection:
+    """Internal face detection with optional MediaPipe keypoints."""
+
+    bbox: BoundingBox
+    confidence: float
+    keypoints: dict[str, tuple[float, float]] | None = None
+
+
+@dataclass
+class RawPersonDetection:
+    """Internal person detection from YOLO."""
+
+    bbox: BoundingBox
+    confidence: float

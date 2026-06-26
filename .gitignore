@@ -35,3 +35,6 @@ cache/output/
 # Environment secrets
 .env
 .env.*
+
+# YOLO model weights (auto-downloaded)
+yolov8*.pt
